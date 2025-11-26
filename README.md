@@ -1,2 +1,16 @@
-# ProyectoEstructuras
-En este proyecto se realizará todo lo visto durante el semestre en la materia "Estructuras de Datos" de una manera masterizada y efectiva
+# Proyecto: ProyectoEstructuras
+
+Integrantes:
+- Alexis Moreno Cruz
+- Karol Antonio Perea Reyes
+- Luis David Villalobos Cuellar
+
+Metodología: Scrum
+Tablero:
+https://github.com/...
+
+Cómo ejecutar:
+python src/grafos/main.py
+
+Requisitos:
+pip install -r requirements.txt
