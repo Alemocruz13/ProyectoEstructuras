@@ -17,6 +17,8 @@ from tkinter import ttk, messagebox
 from representacion.lista_ady import ListaAdyacencia
 from representacion.matriz_ady import MatrizAdyacencia
 from representacion.matriz_inc import MatrizIncidencia
+from visualizacion.plot import plot_grafo
+
 
 # ------------------------------------------------------
 # IMPORTAR ALGORITMOS
@@ -27,7 +29,7 @@ from recorridos.dfs import dfs
 # FUNCIÓN PARA CREAR GRAFO DE DEMOSTRACIÓN
 # ------------------------------------------------------
 def crear_grafo_demo(representacion):
-    n = 5  # número de nodos
+    n = 5
 
     if representacion == "Lista de Adyacencia":
         g = ListaAdyacencia(n)
@@ -35,11 +37,12 @@ def crear_grafo_demo(representacion):
         g = MatrizAdyacencia(n)
     elif representacion == "Matriz de Incidencia":
         g = MatrizIncidencia(n)
+    elif representacion == "Visualización Gráfica":
+        g = ListaAdyacencia(n)
     else:
-        messagebox.showerror("Error", "Representación no reconocida")
         return None
 
-    # Agregar aristas del grafo de prueba
+    # Aristas del ejemplo
     g.add_edge(0, 1)
     g.add_edge(1, 2)
     g.add_edge(2, 3)
@@ -62,6 +65,7 @@ def ejecutar_algoritmo():
     if alg_seleccionado == "":
         messagebox.showerror("Error", "Selecciona un algoritmo.")
         return
+    
 
     g = crear_grafo_demo(rep_seleccionada)
 
@@ -103,7 +107,8 @@ combo_representacion = ttk.Combobox(
     values=[
         "Lista de Adyacencia",
         "Matriz de Adyacencia",
-        "Matriz de Incidencia"
+        "Matriz de Incidencia",
+        "Visualización Gráfica"
     ],
     state="readonly",
     width=30
