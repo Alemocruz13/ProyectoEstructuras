@@ -17,13 +17,17 @@ from tkinter import ttk, messagebox
 from representacion.lista_ady import ListaAdyacencia
 from representacion.matriz_ady import MatrizAdyacencia
 from representacion.matriz_inc import MatrizIncidencia
-from visualizacion.plot import plot_grafo
-
 
 # ------------------------------------------------------
 # IMPORTAR ALGORITMOS
 # ------------------------------------------------------
 from recorridos.dfs import dfs
+from recorridos.bfs import bfs
+
+from arboles.is_tree import is_tree
+from arboles.is_tree import is_tree, is_tree_diagnosis
+
+
 
 # ------------------------------------------------------
 # FUNCIÓN PARA CREAR GRAFO DE DEMOSTRACIÓN
@@ -37,8 +41,6 @@ def crear_grafo_demo(representacion):
         g = MatrizAdyacencia(n)
     elif representacion == "Matriz de Incidencia":
         g = MatrizIncidencia(n)
-    elif representacion == "Visualización Gráfica":
-        g = ListaAdyacencia(n)
     else:
         return None
 
@@ -65,7 +67,6 @@ def ejecutar_algoritmo():
     if alg_seleccionado == "":
         messagebox.showerror("Error", "Selecciona un algoritmo.")
         return
-    
 
     g = crear_grafo_demo(rep_seleccionada)
 
@@ -73,13 +74,28 @@ def ejecutar_algoritmo():
     if alg_seleccionado == "DFS":
         resultado = dfs(g, 0)
 
+    elif alg_seleccionado == "BFS":
+        resultado = bfs(g, 0)
+
+    elif alg_seleccionado == "Es Árbol":
+        diag = is_tree_diagnosis(g)
+        resultado = (
+            "Requisitos para ser Árbol:\n\n"
+            f"- Conectado: {'Sí' if diag['conectado'] else 'No'}\n"
+            f"- Tiene ciclos: {'Sí' if diag['tiene_ciclos'] else 'No'}\n"
+            f"- |E| = n - 1: {'Sí' if diag['e_n_1'] else 'No'}\n\n"
+            f"Resultado final: {'Es árbol' if diag['es_arbol'] else 'NO es árbol'}"
+        )
+
+
     else:
         resultado = "Algoritmo no implementado"
 
     # Mostrar Resultado
     salida.configure(state="normal")
     salida.delete("1.0", tk.END)
-    salida.insert(tk.END,
+    salida.insert(
+        tk.END,
         f"Representación: {rep_seleccionada}\n"
         f"Algoritmo: {alg_seleccionado}\n\n"
         f"Resultado: {resultado}\n\n"
@@ -93,7 +109,7 @@ def ejecutar_algoritmo():
 # ------------------------------------------------------
 root = tk.Tk()
 root.title("Proyecto de Grafos - Interfaz Completa")
-root.geometry("550x500")
+root.geometry("600x560")
 
 titulo = tk.Label(root, text="Proyecto de Estructuras - Grafos", font=("Arial", 18))
 titulo.pack(pady=10)
@@ -108,7 +124,6 @@ combo_representacion = ttk.Combobox(
         "Lista de Adyacencia",
         "Matriz de Adyacencia",
         "Matriz de Incidencia",
-        "Visualización Gráfica"
     ],
     state="readonly",
     width=30
@@ -123,6 +138,8 @@ combo_algoritmo = ttk.Combobox(
     root,
     values=[
         "DFS",
+        "BFS",
+        "Es Árbol",
     ],
     state="readonly",
     width=30
@@ -138,7 +155,7 @@ btn.pack(pady=10)
 # -------------------------
 # Cuadro de Salida
 # -------------------------
-salida = tk.Text(root, width=65, height=15, state="disabled")
+salida = tk.Text(root, width=70, height=20, state="disabled")
 salida.pack(pady=10)
 
 # -------------------------

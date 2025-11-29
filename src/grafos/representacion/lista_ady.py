@@ -1,17 +1,19 @@
 class ListaAdyacencia:
-    def __init__(self, n):
+    def __init__(self, n, dirigido=False):
         self.n = n
-        self.grafo = [[] for _ in range(n)]
+        self.es_dirigido = dirigido
+        self.lista = [[] for _ in range(n)]
 
     def add_edge(self, u, v):
-        self.grafo[u].append(v)
-        self.grafo[v].append(u)
+        self.lista[u].append(v)
+        if not self.es_dirigido:
+            self.lista[v].append(u)
 
     def vecinos(self, u):
-        return self.grafo[u]
+        return self.lista[u]
 
     def __str__(self):
-        texto = ""
+        resultado = ""
         for i in range(self.n):
-            texto += f"{i}: {self.grafo[i]}\n"
-        return texto
+            resultado += f"{i}: {self.lista[i]}\n"
+        return resultado

@@ -1,14 +1,14 @@
-def dfs(grafo, inicio):
-    visitados = [False] * grafo.n
+def dfs(g, start):
+    visited = [False] * g.n
     orden = []
 
-    def dfs_rec(u):
-        visitados[u] = True
+    def _dfs(u):
+        visited[u] = True
         orden.append(u)
 
-        for v in grafo.vecinos(u):
-            if not visitados[v]:
-                dfs_rec(v)
+        for v in g.vecinos(u):
+            if not visited[v]:
+                _dfs(v)
 
-    dfs_rec(inicio)
+    _dfs(start)
     return orden

@@ -1,14 +1,17 @@
 class MatrizAdyacencia:
-    def __init__(self, n):
+    def __init__(self, n, dirigido=False):
         self.n = n
-        self.matriz = [[0 for _ in range(n)] for _ in range(n)]
+        self.es_dirigido = dirigido
+        self.matriz = [[0]*n for _ in range(n)]
 
     def add_edge(self, u, v):
         self.matriz[u][v] = 1
-        self.matriz[v][u] = 1
+        if not self.es_dirigido:
+            self.matriz[v][u] = 1
+
 
     def vecinos(self, u):
-        return [v for v in range(self.n) if self.matriz[u][v] == 1]
+        return [i for i in range(self.n) if self.matriz[u][i] != 0]
 
     def __str__(self):
         return "\n".join(str(fila) for fila in self.matriz)
