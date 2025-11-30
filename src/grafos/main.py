@@ -21,13 +21,21 @@ from representacion.matriz_inc import MatrizIncidencia
 # ------------------------------------------------------
 # IMPORTAR ALGORITMOS
 # ------------------------------------------------------
+
+#Importación recorridos
 from recorridos.dfs import dfs
 from recorridos.bfs import bfs
 
+#Importación árboles
 from arboles.is_tree import is_tree
 from arboles.is_tree import is_tree, is_tree_diagnosis
 
+#Importación componentes conexas y SCC
+from componentesconexos.tarjan import tarjan
+from componentesconexos.kosaraju import kosaraju
 
+#Importar representación de datos de componentes
+from representacion.data_componentes import grafo_dirigido_scc, NODOS_GRAFO_SÓLO_DIRIGIDO
 
 # ------------------------------------------------------
 # FUNCIÓN PARA CREAR GRAFO DE DEMOSTRACIÓN
@@ -69,7 +77,8 @@ def ejecutar_algoritmo():
         return
 
     g = crear_grafo_demo(rep_seleccionada)
-
+    g_display = g  # Por defecto, mostrar el grafo creado
+    resultado = "Algoritmo no ejecutado."
     # Ejecutar algoritmo elegido
     if alg_seleccionado == "DFS":
         resultado = dfs(g, 0)
@@ -86,11 +95,34 @@ def ejecutar_algoritmo():
             f"- |E| = n - 1: {'Sí' if diag['e_n_1'] else 'No'}\n\n"
             f"Resultado final: {'Es árbol' if diag['es_arbol'] else 'NO es árbol'}"
         )
+    # 1. Componentes Conexas (No Dirigidas)
+   # elif alg_seleccionado == "Comp. Conexas (No Dirigidas)":
+    #    # Usa el diccionario de datos importado
+     #   resultado = encontrar_componentes_conexas(grafo_no_dirigido_componentes)
+      #  resultado = f"Componentes Encontradas: {resultado}"
+       # g_display = grafo_no_dirigido_componentes
+        #rep_seleccionada = "Lista de Adyacencia (Diccionario de Prueba)"
+
+    # 2. Componentes Fuertemente Conexas (Kosaraju)
+    elif alg_seleccionado == "Comp. Fuertemente Conexas (Kosaraju)":
+        # Usa el diccionario de datos dirigido importado
+        scc_list = kosaraju(grafo_dirigido_scc, NODOS_GRAFO_SÓLO_DIRIGIDO)
+        resultado = f"SCC Encontradas (Kosaraju):\n{scc_list}"
+        g_display = grafo_dirigido_scc
+        rep_seleccionada = "Lista de Adyacencia (Dirigido de Prueba)"
+
+    # 3. Componentes Fuertemente Conexas (Tarjan)
+    elif alg_seleccionado == "Comp. Fuertemente Conexas (Tarjan)":
+        # Usa el diccionario de datos dirigido importado
+        scc_list = tarjan(grafo_dirigido_scc, NODOS_GRAFO_SÓLO_DIRIGIDO)
+        resultado = f"SCC Encontradas (Tarjan):\n{scc_list}"
+        g_display = grafo_dirigido_scc
+        rep_seleccionada = "Lista de Adyacencia (Dirigido de Prueba)"
 
 
     else:
         resultado = "Algoritmo no implementado"
-
+        g_display = g
     # Mostrar Resultado
     salida.configure(state="normal")
     salida.delete("1.0", tk.END)
@@ -140,6 +172,8 @@ combo_algoritmo = ttk.Combobox(
         "DFS",
         "BFS",
         "Es Árbol",
+        "SCC - Kosaraju (Dirigido)",
+        "SCC - Tarjan (Dirigido)",
     ],
     state="readonly",
     width=30
