@@ -1,51 +1,67 @@
-from recorridos.dfs import dfs
-
 def has_cycle(g):
+    """Detecta ciclos en grafos dirigidos y no dirigidos, ponderados o no."""
+
     visited = [False] * g.n
-    stack = [False] * g.n
+    parent = [-1] * g.n
 
     # -----------------------------
-    # Caso 1: Grafo dirigido
+    # CICLOS EN GRAFO NO DIRIGIDO
     # -----------------------------
-    def dfs_dir(u):
+    def dfs_undir(u):
         visited[u] = True
-        stack[u] = True
 
         for v in g.vecinos(u):
+
+            # Si es ponderado, v es (nodo, peso)
+            if g.es_ponderado:
+                v = v[0]
+
+            if not visited[v]:
+                parent[v] = u
+                if dfs_undir(v):
+                    return True
+
+            # Si ya está visitado y no es el padre, hay ciclo
+            elif parent[u] != v:
+                return True
+
+        return False
+
+    # -----------------------------
+    # CICLOS EN GRAFO DIRIGIDO
+    # -----------------------------
+    in_stack = [False] * g.n
+
+    def dfs_dir(u):
+        visited[u] = True
+        in_stack[u] = True
+
+        for v in g.vecinos(u):
+
+            # Extraer nodo si es ponderado
+            if g.es_ponderado:
+                v = v[0]
+
             if not visited[v]:
                 if dfs_dir(v):
                     return True
-            elif stack[v]:
-                return True
 
-        stack[u] = False
+            elif in_stack[v]:
+                return True  # ciclo dirigido encontrado
+
+        in_stack[u] = False
         return False
 
     # -----------------------------
-    # Caso 2: Grafo NO dirigido
+    # EJECUTAR CORRESPONDIENTE
     # -----------------------------
-    def dfs_undir(u, parent):
-        visited[u] = True
-
-        for v in g.vecinos(u):
-            if not visited[v]:
-                if dfs_undir(v, u):
-                    return True
-            elif v != parent:
-                return True
-
-        return False
-
     if g.es_dirigido:
         for i in range(g.n):
-            if not visited[i]:
-                if dfs_dir(i):
-                    return True
-        return False
-    
+            if not visited[i] and dfs_dir(i):
+                return True
     else:
         for i in range(g.n):
-            if not visited[i]:
-                if dfs_undir(i, -1):
-                    return True
-        return False
+            if not visited[i] and dfs_undir(i):
+                return True
+
+    return False
