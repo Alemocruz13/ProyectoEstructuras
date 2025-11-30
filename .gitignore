@@ -1,5 +1,25 @@
+# Entornos virtuales
 venv/
-__pycache__/
-*.pyc
-.env
+env/
+
+# Cache de Python
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+
+# Archivos temporales
+*.log
+
+# Configuración de VS Code
 .vscode/
+
+# Archivos de entorno
+.env
+
+# Archivos generados por Tkinter o GUIs
+*.db
+*.sqlite3
+
+# Archivos de compilación
+build/
+dist/
