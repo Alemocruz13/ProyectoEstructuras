@@ -1,5 +1,5 @@
 # ------------------------------------------------------
-# CONFIGURACIÓN PARA QUE LOS IMPORTS FUNCIONEN EN VS CODE
+# main.py (versión corregida: Opción B)
 # ------------------------------------------------------
 import sys
 import os
@@ -10,6 +10,14 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # ------------------------------------------------------
 import tkinter as tk
 from tkinter import ttk, messagebox
+from collections import deque
+
+# networkx solo para matching general; si falta, mostramos error al usarlo
+try:
+    import networkx as nx
+    HAS_NETWORKX = True
+except Exception:
+    HAS_NETWORKX = False
 
 # ------------------------------------------------------
 # IMPORTAR REPRESENTACIONES
@@ -19,11 +27,21 @@ from representacion.matriz_ady import MatrizAdyacencia
 from representacion.matriz_inc import MatrizIncidencia
 
 # ------------------------------------------------------
-# IMPORTAR ALGORITMOS
+# IMPORTAR ALGORITMOS (tus módulos)
 # ------------------------------------------------------
 from recorridos.dfs import dfs
 from recorridos.bfs import bfs
-from arboles.is_tree import is_tree_diagnosis
+from arboles.is_tree import is_tree_diagnosis, is_tree
+
+# Componentes conexas
+# Si no tienes estos archivos, coméntalos o añade los módulos correspondientes.
+try:
+    from componentesconexos.tarjan import tarjan
+    from componentesconexos.kosaraju import kosaraju
+    from representacion.data_componentes import grafo_dirigido_scc, NODOS_GRAFO_SÓLO_DIRIGIDO
+    HAS_SCC_EXTRAS = True
+except Exception:
+    HAS_SCC_EXTRAS = False
 
 # ------------------------------------------------------
 # VARIABLES GLOBALES
@@ -35,6 +53,20 @@ grafo_config = {
     "n": 0,
     "aristas": ""
 }
+
+# ------------------------------------------------------
+# UTIL: obtener vecinos como nodos (ignorar pesos)
+# ------------------------------------------------------
+def vecinos_nodos(g, u):
+    """
+    Devuelve un iterable de enteros: los vecinos (nodos) de u,
+    manejando tanto grafos ponderados (vecino = (v, peso)) como no ponderados (v).
+    """
+    for v in g.vecinos(u):
+        if g.es_ponderado:
+            yield v[0]
+        else:
+            yield v
 
 # ------------------------------------------------------
 # CREAR GRAFO DESDE CONFIGURACIÓN
@@ -69,17 +101,22 @@ def crear_grafo_desde_config():
         if ponderado:
             if len(partes) != 3:
                 raise ValueError(f"Formato incorrecto (u v peso): {linea}")
-            u, v, w = map(int, partes)
+            u, v = int(partes[0]), int(partes[1])
+            # peso puede ser float; almacenar como number
+            try:
+                w = float(partes[2])
+            except:
+                raise ValueError(f"Peso inválido en línea: {linea}")
         else:
             if len(partes) != 2:
                 raise ValueError(f"Formato incorrecto (u v): {linea}")
-            u, v = map(int, partes)
+            u, v = int(partes[0]), int(partes[1])
+            w = None
 
         # VALIDAR NODOS
         if u < 0 or u >= n or v < 0 or v >= n:
             raise ValueError(
-                f"Nodo fuera de rango en arista '{linea}'. "
-                f"Nodos permitidos: 0 a {n-1}"
+                f"Nodo fuera de rango en arista '{linea}'. Nodos permitidos: 0 a {n-1}"
             )
 
         # Ahora sí agregamos la arista
@@ -89,17 +126,14 @@ def crear_grafo_desde_config():
             g.add_edge(u, v)
     return g
 
-
 # ------------------------------------------------------
 # VENTANA DE CONFIGURACIÓN DEL GRAFO
 # ------------------------------------------------------
 def abrir_config_grafo():
-
     cfg = tk.Toplevel(root)
     cfg.title("Configurar Grafo")
-    cfg.geometry("500x550")
+    cfg.geometry("520x560")
 
-    # -------- Representación --------
     tk.Label(cfg, text="Representación del grafo:", font=("Arial", 12)).pack(pady=5)
     combo_rep = ttk.Combobox(
         cfg,
@@ -136,7 +170,7 @@ def abrir_config_grafo():
     def popup_arista():
         pop = tk.Toplevel(cfg)
         pop.title("Agregar Arista")
-        pop.geometry("220x220")
+        pop.geometry("260x240")
 
         tk.Label(pop, text="Nodo U:").pack()
         e_u = tk.Entry(pop)
@@ -154,10 +188,10 @@ def abrir_config_grafo():
             e_w = None
 
         def agregar():
-            u = e_u.get()
-            v = e_v.get()
+            u = e_u.get().strip()
+            v = e_v.get().strip()
             if combo_pond.get() == "Sí":
-                w = e_w.get()
+                w = e_w.get().strip()
                 text_ar.insert(tk.END, f"{u} {v} {w}\n")
             else:
                 text_ar.insert(tk.END, f"{u} {v}\n")
@@ -200,12 +234,111 @@ def abrir_config_grafo():
 
     tk.Button(cfg, text="Guardar configuración", font=("Arial", 12), command=guardar).pack(pady=10)
 
+# ------------------------------------------------------
+# DETECCIÓN AUTOMÁTICA DE BIPARTICIÓN (BFS)
+# ------------------------------------------------------
+def detectar_biparticion(g):
+    color = {}
+    for start in range(g.n):
+        if start not in color:
+            color[start] = 0
+            q = deque([start])
+
+            while q:
+                u = q.popleft()
+                for v in vecinos_nodos(g, u):
+                    if v not in color:
+                        color[v] = 1 - color[u]
+                        q.append(v)
+                    else:
+                        if color[v] == color[u]:
+                            return None, None, False
+
+    U = [nodo for nodo, col in color.items() if col == 0]
+    V = [nodo for nodo, col in color.items() if col == 1]
+    return U, V, True
+
+# ------------------------------------------------------
+# HOPCROFT–KARP ADAPTADO (usa vecinos_nodos)
+# ------------------------------------------------------
+INF = 10**9
+
+def hopcroft_karp(grafo, U, V):
+    # pairU/pairV: mapping node->partner or None
+    pairU = {u: None for u in U}
+    pairV = {v: None for v in V}
+    dist = {}
+
+    def bfs_level():
+        q = deque()
+        for u in U:
+            if pairU[u] is None:
+                dist[u] = 0
+                q.append(u)
+            else:
+                dist[u] = INF
+
+        found = False
+        while q:
+            u = q.popleft()
+            for v in vecinos_nodos(grafo, u):
+                if v not in pairV:
+                    continue
+                if pairV[v] is None:
+                    found = True
+                else:
+                    u2 = pairV[v]
+                    if dist.get(u2, INF) == INF:
+                        dist[u2] = dist[u] + 1
+                        q.append(u2)
+        return found
+
+    def dfs_try(u):
+        for v in vecinos_nodos(grafo, u):
+            if v not in pairV:
+                continue
+            if pairV[v] is None or (dist.get(pairV[v], INF) == dist[u] + 1 and dfs_try(pairV[v])):
+                pairU[u] = v
+                pairV[v] = u
+                return True
+        dist[u] = INF
+        return False
+
+    matching = 0
+    while bfs_level():
+        for u in U:
+            if pairU[u] is None:
+                if dfs_try(u):
+                    matching += 1
+
+    return matching, pairU, pairV
+
+# ------------------------------------------------------
+# Matching general (usa networkx)
+# ------------------------------------------------------
+def matching_general(g):
+    if not HAS_NETWORKX:
+        raise RuntimeError("Falta 'networkx'. Instálalo con: pip install networkx")
+    G = nx.Graph()
+    G.add_nodes_from(range(g.n))
+    # Añadir aristas (sin duplicar)
+    seen = set()
+    for u in range(g.n):
+        for v in vecinos_nodos(g, u):
+            if u == v:  # evitar loops
+                continue
+            a = (u, v) if u <= v else (v, u)
+            if a in seen:
+                continue
+            seen.add(a)
+            G.add_edge(a[0], a[1])
+    matching = nx.max_weight_matching(G, maxcardinality=True)
+    return matching
 
 # ------------------------------------------------------
 # EJECUTAR ALGORITMO
 # ------------------------------------------------------
 def ejecutar_algoritmo():
-
     if grafo_config["representacion"] is None:
         messagebox.showerror("Error", "Primero configura un grafo.")
         return
@@ -217,12 +350,15 @@ def ejecutar_algoritmo():
         return
 
     alg = combo_alg.get()
+    resultado = None
 
     if alg == "DFS":
-        resultado = dfs(g, 0)
+        res = dfs(g, 0)
+        resultado = "Recorrido DFS: " + " → ".join(map(str, res))
 
     elif alg == "BFS":
-        resultado = bfs(g, 0)
+        res = bfs(g, 0)
+        resultado = "Recorrido BFS: " + " → ".join(map(str, res))
 
     elif alg == "Es Árbol":
         diag = is_tree_diagnosis(g)
@@ -234,22 +370,64 @@ def ejecutar_algoritmo():
             f"Resultado final: {'ES Árbol' if diag['es_arbol'] else 'NO es Árbol'}"
         )
 
+    elif alg == "SCC - Kosaraju (Dirigido)":
+        if not HAS_SCC_EXTRAS:
+            resultado = "SCC (Kosaraju) no disponible: faltan módulos adicionales."
+        else:
+            # usar datos de ejemplo importados
+            scc_list = kosaraju(grafo_dirigido_scc, NODOS_GRAFO_SÓLO_DIRIGIDO)
+            resultado = f"SCC Encontradas (Kosaraju):\n{scc_list}"
+
+    elif alg == "SCC - Tarjan (Dirigido)":
+        if not HAS_SCC_EXTRAS:
+            resultado = "SCC (Tarjan) no disponible: faltan módulos adicionales."
+        else:
+            scc_list = tarjan(grafo_dirigido_scc, NODOS_GRAFO_SÓLO_DIRIGIDO)
+            resultado = f"SCC Encontradas (Tarjan):\n{scc_list}"
+
+    elif alg == "Matching Bipartito":
+        # detectar U/V automáticamente y mostrar popup con resultado
+        U, V, ok = detectar_biparticion(g)
+        if not ok:
+            messagebox.showinfo("Matching Bipartito", "El grafo NO es bipartito. No se puede ejecutar Hopcroft–Karp.")
+            return
+        # ejecutar matching
+        try:
+            m, pairU, pairV = hopcroft_karp(g, U, V)
+            # mostrar en popup
+            win = tk.Toplevel(root)
+            win.title("Matching Bipartito - Resultado")
+            txt = tk.Text(win, width=60, height=20)
+            txt.pack()
+            txt.insert(tk.END, f"El grafo es bipartito.\nU = {U}\nV = {V}\n\n")
+            txt.insert(tk.END, f"Matching máximo = {m}\n\nPareos (U -> V):\n{pairU}\n")
+            return
+        except Exception as e:
+            messagebox.showerror("Error", f"Error en Hopcroft–Karp:\n{e}")
+            return
+
+    elif alg == "Matching General":
+        try:
+            match = matching_general(g)
+            resultado = f"Matching máximo general (pares):\n{match}"
+        except Exception as e:
+            resultado = f"Error (matching general): {e}"
+
     else:
         resultado = "Algoritmo no implementado"
 
+    # Mostrar resultado y el grafo interno
     salida.configure(state="normal")
     salida.delete("1.0", tk.END)
     salida.insert(tk.END, str(resultado) + "\n\nGrafo:\n" + str(g))
     salida.configure(state="disabled")
-
-
 
 # ------------------------------------------------------
 # INTERFAZ PRINCIPAL
 # ------------------------------------------------------
 root = tk.Tk()
 root.title("Proyecto de Grafos")
-root.geometry("600x500")
+root.geometry("700x600")
 
 tk.Label(root, text="Proyecto de Estructuras - Grafos", font=("Arial", 18)).pack(pady=10)
 
@@ -257,17 +435,25 @@ tk.Label(root, text="Algoritmo:", font=("Arial", 12)).pack()
 
 combo_alg = ttk.Combobox(
     root,
-    values=["DFS", "BFS", "Es Árbol"],
+    values=[
+        "DFS",
+        "BFS",
+        "Es Árbol",
+        "SCC - Kosaraju (Dirigido)",
+        "SCC - Tarjan (Dirigido)",
+        "Matching Bipartito",
+        "Matching General"
+    ],
     state="readonly",
-    width=30
+    width=40
 )
-combo_alg.pack(pady=5)
+combo_alg.pack(pady=8)
 
-tk.Button(root, text="Configurar Grafo", font=("Arial", 12), command=abrir_config_grafo).pack(pady=10)
+tk.Button(root, text="Configurar Grafo", font=("Arial", 12), command=abrir_config_grafo).pack(pady=6)
+tk.Button(root, text="Ejecutar Algoritmo", font=("Arial", 12), command=ejecutar_algoritmo).pack(pady=6)
 
-tk.Button(root, text="Ejecutar Algoritmo", font=("Arial", 12), command=ejecutar_algoritmo).pack(pady=10)
-
-salida = tk.Text(root, width=70, height=15, state="disabled")
-salida.pack(pady=10)
+salida = tk.Text(root, width=90, height=20, state="disabled")
+salida.pack(pady=10, padx=10)
 
 root.mainloop()
+
