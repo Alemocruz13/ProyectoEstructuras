@@ -1,27 +1,13 @@
+from collections import deque
+
 def matching_general(g):
-    """
-    Implementación compacta basada en Edmonds Blossom.
-    g: grafo con vecinos(u)
-    """
-    from collections import deque
-
-    # Construimos lista de aristas
-    edges = []
-    for u in range(g.n):
-        for v in g.vecinos(u):
-            if u < v:
-                edges.append((u, v))
-
-    # ---- Blossom Algorithm ----
-    # Tomado de versión académica reducida (MIT)
-
     n = g.n
     match = [-1] * n
     base = list(range(n))
     p = [-1] * n
-    q = deque()
     used = [False] * n
     blossom = [False] * n
+    q = deque()
 
     def lca(a, b):
         visited = [False] * n
@@ -45,10 +31,9 @@ def matching_general(g):
             v = p[match[v]]
 
     def find_path(root):
-        used[:] = [False]*n
-        p[:] = [-1]*n
+        used[:] = [False] * n
+        p[:] = [-1] * n
         q.clear()
-
         q.append(root)
         used[root] = True
 
@@ -59,7 +44,7 @@ def matching_general(g):
                     continue
                 if u == root or (match[u] != -1 and p[match[u]] != -1):
                     cur = lca(v, u)
-                    blossom[:] = [False]*n
+                    blossom[:] = [False] * n
                     mark_path(v, cur, u)
                     mark_path(u, cur, v)
                     for i in range(n):
@@ -71,47 +56,25 @@ def matching_general(g):
                 elif p[u] == -1:
                     p[u] = v
                     if match[u] == -1:
-                        # aumentar matching
                         while u != -1:
                             v = p[u]
-                            w = match[v]
+                            w = match[v] if v != -1 else -1
                             match[v] = u
                             match[u] = v
                             u = w
                         return True
-                    u2 = match[u]
-                    used[u2] = True
-                    q.append(u2)
+                    used[match[u]] = True
+                    q.append(match[u])
         return False
 
     for i in range(n):
         if match[i] == -1:
-            base = list(range(n))
+            base[:] = list(range(n))
             find_path(i)
 
-    # convertir a conjunto de parejas
-    result = set()
+    res = set()
     for u in range(n):
         v = match[u]
-        if u < v:
-            result.add((u, v))
-
-    return result
-
-
-def matching_perfecto_general(matching, n):
-    return len(matching) * 2 == n
-
-
-def matching_maximal_general(g, matching):
-    M = set(matching)
-    matched_nodes = set()
-    for u, v in M:
-        matched_nodes.add(u)
-        matched_nodes.add(v)
-
-    for u in range(g.n):
-        for v in g.vecinos(u):
-            if u not in matched_nodes and v not in matched_nodes:
-                return False
-    return True
+        if v != -1 and u < v:
+            res.add((u, v))
+    return res

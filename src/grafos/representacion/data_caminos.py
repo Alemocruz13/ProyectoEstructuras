@@ -1,41 +1,28 @@
-# Importación para valor infinito
-import math
-
-# =================================================================
-# GRAFOS DE PRUEBA PARA CAMINOS MÁS CORTOS
-# Formato: {nodo: [(vecino, peso), ...]}
-# =================================================================
-
-# --- 1. Grafo para Dijkstra (Pesos no negativos) ---
+# Grafo para Dijkstra
 grafo_dijkstra = {
-    'A': [('B', 4), ('C', 2)],
-    'B': [('E', 3)],
-    'C': [('D', 2), ('F', 4)],
-    'D': [('E', 3)],
-    'E': [('G', 1)],
-    'F': [('G', 2)],
-    'G': []
+    'A': [('B', 4), ('C', 1)],
+    'B': [('E', 4)],
+    'C': [('B', 2), ('D', 4)],
+    'D': [('E', 4)],
+    'E': []
 }
-NODOS_DIJKSTRA = list(grafo_dijkstra.keys())
+NODOS_DIJKSTRA = ['A', 'B', 'C', 'D', 'E']
 
 
-# --- 2. Grafo para Bellman-Ford (Con pesos negativos, SIN ciclo negativo) ---
+# Grafo para Bellman-Ford sin ciclos negativos
 grafo_bellman_ford = {
-    'A': [('B', 6), ('C', 7)],
-    'B': [('D', 5), ('E', -4)],
-    'C': [('D', -3)],
-    'D': [('E', -2)],
-    'E': [('G', 2)],
-    'G': []
+    'A': [('B', 4), ('C', 5)],
+    'B': [('C', -3), ('D', 6)],
+    'C': [('D', 2)],
+    'D': []
 }
-NODOS_BELLMAN = list(grafo_bellman_ford.keys())
+NODOS_BELLMAN = ['A', 'B', 'C', 'D']
 
 
-# --- 3. Grafo con Ciclo Negativo (Para detección en Bellman-Ford) ---
+# Grafo para Bellman-Ford con ciclo negativo
 grafo_ciclo_negativo = {
     'A': [('B', 1)],
-    'B': [('C', -10)],
-    'C': [('D', 1)],
-    'D': [('B', 5)] # Ciclo B-C-D con peso total 1 + (-10) + 5 = -4 (CICLO NEGATIVO)
+    'B': [('C', -1)],
+    'C': [('A', -1)]
 }
-NODOS_CICLO_NEG = list(grafo_ciclo_negativo.keys())
+NODOS_CICLO_NEG = ['A', 'B', 'C']
