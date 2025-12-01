@@ -1,51 +1,38 @@
 class MatrizIncidencia:
-    def __init__(self, n, dirigido=False):
+    def __init__(self, n, dirigido=False, ponderado=False):
         self.n = n
         self.es_dirigido = dirigido
-        self.matriz = []   # cada columna representa una arista
+        self.es_ponderado = ponderado
+        self.matriz = [[] for _ in range(n)]
+        self.aristas = 0
 
-    def add_edge(self, u, v):
-        # Crear columna de arista
-        col = [0] * self.n
+    def add_edge(self, u, v, peso=None):
+        peso_val = peso if self.es_ponderado else 1
 
-        if not self.es_dirigido:
-            # Grafo NO dirigido: 1 indica que el nodo toca esa arista
-            col[u] = 1
-            col[v] = 1
+        # Nueva columna
+        for i in range(self.n):
+            self.matriz[i].append(0)
 
+        if self.es_dirigido:
+            self.matriz[u][self.aristas] = -peso_val
+            self.matriz[v][self.aristas] = peso_val
         else:
-            # Grafo dirigido:
-            # u → v  1 = salida, -1 = entrada
-            col[u] = 1
-            col[v] = -1
+            self.matriz[u][self.aristas] = peso_val
+            self.matriz[v][self.aristas] = peso_val
 
-        self.matriz.append(col)
+        self.aristas += 1
 
     def vecinos(self, u):
         vecinos = []
-
-        # Recorremos cada arista (columna)
-        for col in self.matriz:
-
-            if not self.es_dirigido:
-                # No dirigido: si col[u] = 1, buscar al otro extremo
-                if col[u] == 1:
-                    for i in range(self.n):
-                        if i != u and col[i] == 1:
-                            vecinos.append(i)
-
-            else:
-                # Dirigido: u → v si col[u] = 1 y col[v] = -1
-                if col[u] == 1:
-                    for i in range(self.n):
-                        if col[i] == -1:
-                            vecinos.append(i)
-
+        for col in range(self.aristas):
+            if self.matriz[u][col] != 0:
+                for v in range(self.n):
+                    if v != u and self.matriz[v][col] != 0:
+                        if self.es_ponderado:
+                            vecinos.append((v, abs(self.matriz[u][col])))
+                        else:
+                            vecinos.append(v)
         return vecinos
 
     def __str__(self):
-        # Imprime cada columna como vector de incidencia
-        salida = ""
-        for i, col in enumerate(self.matriz):
-            salida += f"Arista {i}: {col}\n"
-        return salida
+        return "\n".join(str(fila) for fila in self.matriz)
