@@ -1,8 +1,9 @@
-from interfaz.gui import iniciar_app
-
-
-if __name__ == "__main__":
-    iniciar_app()
+# ------------------------------------------------------
+# main.py — Interfaz completa con matching externo/interno
+# ------------------------------------------------------
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # ------------------------------------------------------
 # LIBRERÍAS
