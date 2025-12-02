@@ -32,6 +32,7 @@ from representacion.matriz_inc import MatrizIncidencia
 from recorridos.dfs import dfs
 from recorridos.bfs import bfs
 from arboles.is_tree import is_tree_diagnosis
+from arboles.kruskal import kruskal
 
 # Componentes conexas / SCC (opcional)
 try:
@@ -494,6 +495,24 @@ def ejecutar_algoritmo():
                 else:
                     mat = _matching_general_internal(g)
             resultado = f"Matching general máximo:\n{mat}"
+            
+        elif alg == "Kruskal (MST)":
+            edges = []
+            for u in range(g.n):
+                for v in g.vecinos(u):
+                    if g.es_ponderado:
+                        try:
+                            nodo, peso = v
+                        except TypeError:
+                            nodo = v
+                            peso = 1
+                    else:
+                        nodo = v
+                        peso = 1
+                    if u < nodo or g.es_dirigido:
+                        edges.append((u, nodo, peso))
+            mst = kruskal(g.n, edges, directed=g.es_dirigido, weighted=g.es_ponderado)
+            resultado = f"MST (Kruskal): \n{mst}"
 
         else:
             resultado = "Algoritmo no implementado."
@@ -526,7 +545,8 @@ combo_alg = ttk.Combobox(
         "SCC - Kosaraju (Dirigido)",
         "SCC - Tarjan (Dirigido)",
         "Matching Bipartito",
-        "Matching General"
+        "Matching General",
+        "Kruskal (MST)"
     ],
     state="readonly",
     width=40
