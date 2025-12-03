@@ -3,6 +3,13 @@ class MatrizAdyacencia:
         self.n = n
         self.es_dirigido = dirigido
         self.es_ponderado = ponderado
+
+        # Nodos estándar 0..n-1
+        self.nodos = list(range(n))
+        self.indice = {i: i for i in range(n)}     # nodo → índice
+        self.reverso = {i: i for i in range(n)}    # índice → nodo
+
+        # Matriz NxN
         self.matriz = [[0]*n for _ in range(n)]
 
     def add_edge(self, u, v, peso=None):
@@ -16,14 +23,17 @@ class MatrizAdyacencia:
                 self.matriz[v][u] = 1
 
     def vecinos(self, u):
-        lista = []
+        vec = []
         for v in range(self.n):
             if self.matriz[u][v] != 0:
                 if self.es_ponderado:
-                    lista.append((v, self.matriz[u][v]))
+                    vec.append((v, self.matriz[u][v]))
                 else:
-                    lista.append(v)
-        return lista
+                    vec.append(v)
+        return vec
 
     def __str__(self):
-        return "\n".join(str(fila) for fila in self.matriz)
+        res = "Matriz de Adyacencia:\n"
+        for fila in self.matriz:
+            res += f"{fila}\n"
+        return res

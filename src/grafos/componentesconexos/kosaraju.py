@@ -1,81 +1,70 @@
-# Archivo: src/componentesconexos/kosaraju.py
-
-# Importación corregida a las nuevas variables de prueba base
-from representacion.data_componentes import grafo_dirigido_scc_base, NODOS_SÓLO_DIRIGIDO_BASE
-
 class KosarajuSCC:
-    def __init__(self, grafo, lista_nodos):
-        self.grafo = grafo
-        self.lista_nodos = lista_nodos
+    def __init__(self, g):
+        self.g = g               # Objeto Grafo
+        self.nodos = g.nodos     # Lista de nodos originales
         self.visitados = set()
         self.pila_orden = []
         self.scc_encontradas = []
 
-    def crear_grafo_traspuesto(self):
-        """ Invierte la dirección de todas las aristas: O(V + E). """
-        grafo_traspuesto = {nodo: [] for nodo in self.lista_nodos}
-        
-        for nodo in self.grafo:
-            for vecino in self.grafo[nodo]:
-                grafo_traspuesto[vecino].append(nodo)
-                
-        return grafo_traspuesto
+    # --------- Crear grafo traspuesto ---------
+    def crear_traspuesto(self):
+        trans = {nodo: [] for nodo in self.nodos}
 
-    # --- PASO 1: Obtener Orden de Finalización ---
-    def dfs_paso1(self, nodo):
-        """ Recorrido en el grafo original para ordenar los nodos. """
-        self.visitados.add(nodo)
-        
-        for vecino in self.grafo.get(nodo, []):
-            if vecino not in self.visitados:
-                self.dfs_paso1(vecino)
-        
-        # Una vez que el nodo y todos sus descendientes son visitados, se apila.
-        self.pila_orden.append(nodo) 
+        for u in self.nodos:
+            for v in self.g.vecinos(u):
+                if self.g.es_ponderado:
+                    v = v[0]
+                trans[v].append(u)
 
-    # --- PASO 2: Encontrar SCC en el Traspuesto ---
-    def dfs_paso2(self, nodo, grafo_traspuesto, componente_actual):
-        """ Recorrido en el grafo traspuesto para agrupar nodos. """
-        self.visitados.add(nodo)
-        componente_actual.append(nodo)
-        
-        for vecino in grafo_traspuesto.get(nodo, []):
-            if vecino not in self.visitados:
-                self.dfs_paso2(vecino, grafo_traspuesto, componente_actual)
+        return trans
 
-    # --- Función Principal ---
+    # --------- Paso 1: Orden de finalización ---------
+    def dfs1(self, u):
+        self.visitados.add(u)
+
+        for v in self.g.vecinos(u):
+            if self.g.es_ponderado:
+                v = v[0]
+
+            if v not in self.visitados:
+                self.dfs1(v)
+
+        self.pila_orden.append(u)
+
+    # --------- Paso 2: DFS en el traspuesto ---------
+    def dfs2(self, u, trans, comp):
+        self.visitados.add(u)
+        comp.append(u)
+
+        for v in trans.get(u, []):
+            if v not in self.visitados:
+                self.dfs2(v, trans, comp)
+
+    # --------- Función principal ---------
     def encontrar_scc(self):
-        # Reiniciar variables
         self.visitados.clear()
         self.pila_orden = []
         self.scc_encontradas = []
 
-        # 1. Obtener orden de finalización (Paso 1)
-        for nodo in self.lista_nodos:
+        # Paso 1
+        for nodo in self.nodos:
             if nodo not in self.visitados:
-                self.dfs_paso1(nodo)
-                
-        # 2. Crear el grafo traspuesto
-        grafo_traspuesto = self.crear_grafo_traspuesto()
-        
-        # 3. Recorrer el traspuesto en el orden inverso de la pila (Paso 2)
+                self.dfs1(nodo)
+
+        # Paso 2
+        trans = self.crear_traspuesto()
         self.visitados.clear()
+
         while self.pila_orden:
-            nodo = self.pila_orden.pop()
-            
-            if nodo not in self.visitados:
-                componente_actual = []
-                self.dfs_paso2(nodo, grafo_traspuesto, componente_actual)
-                self.scc_encontradas.append(componente_actual)
-                
+            u = self.pila_orden.pop()
+
+            if u not in self.visitados:
+                comp = []
+                self.dfs2(u, trans, comp)
+                self.scc_encontradas.append(comp)
+
         return self.scc_encontradas
 
-def kosaraju(grafo, lista_nodos):
-    """ Función de llamada simple para la interfaz. """
-    solver = KosarajuSCC(grafo, lista_nodos)
-    return solver.encontrar_scc()
 
-if __name__ == "__main__":
-    # Usando las nuevas variables de prueba BASE
-    scc = kosaraju(grafo_dirigido_scc_base, NODOS_SÓLO_DIRIGIDO_BASE)
-    print("SCC Kosaraju:", scc)
+def kosaraju(g):
+    return KosarajuSCC(g).encontrar_scc()
