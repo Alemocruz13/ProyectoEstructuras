@@ -1,16 +1,32 @@
 from collections import deque
 
-def es_bipartito(grafo):
+def es_bipartito_general(edges, dirigido=False, ponderado=False):
     """
     Determina si un grafo es bipartito usando coloreo de 2 colores.
-    grafo: dict con la lista de adyacencia {nodo: [vecinos]}
+    
+    edges: lista de aristas
+        - No ponderado: [(u,v), ...]
+        - Ponderado: [(u,v,w), ...] donde w es el peso
+    dirigido: True si el grafo es dirigido
+    ponderado: True si las aristas tienen peso
     Retorna True si es bipartito, False si no lo es.
     """
-    color = {}  # Diccionario que almacena el color de cada nodo: 0 o 1
+    # Construimos la lista de adyacencia
+    grafo = {}
+    for edge in edges:
+        u, v = edge[:2]  # ignoramos el peso si lo hay
+        if u not in grafo:
+            grafo[u] = []
+        grafo[u].append(v)
+        if not dirigido:
+            if v not in grafo:
+                grafo[v] = []
+            grafo[v].append(u)
+    
+    color = {}
 
     for nodo in grafo:
         if nodo not in color:
-            # Empezamos coloreando este nodo con 0
             color[nodo] = 0
             cola = deque([nodo])
 
@@ -18,20 +34,18 @@ def es_bipartito(grafo):
                 actual = cola.popleft()
                 for vecino in grafo[actual]:
                     if vecino not in color:
-                        # Asignamos el color opuesto al vecino
                         color[vecino] = 1 - color[actual]
                         cola.append(vecino)
                     elif color[vecino] == color[actual]:
-                        # Si un vecino tiene el mismo color, no es bipartito
                         return False
     return True
 
-# Ejemplo de uso:
-grafo = {
-    0: [1, 3],
-    1: [0, 2],
-    2: [1, 3],
-    3: [0, 2]
-}
+# Ejemplos de uso:
 
-print(es_bipartito(grafo))  # Debería imprimir True
+# Grafo no dirigido, no ponderado
+edges1 = [(0,1),(1,2),(2,3),(3,0)]
+print(es_bipartito_general(edges1))  # True
+
+# Grafo dirigido, ponderado
+edges2 = [(0,1,5),(1,2,3),(2,3,2),(3,0,4)]
+print(es_bipartito_general(edges2, dirigido=True, ponderado=True))  # False
