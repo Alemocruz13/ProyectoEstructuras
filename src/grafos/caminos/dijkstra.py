@@ -1,35 +1,40 @@
+# caminos/dijkstra.py
+
 import heapq
 import math
 
-class Dijkstra:
-    def __init__(self, grafo, lista_nodos):
-        self.grafo = grafo
-        self.lista_nodos = lista_nodos
-        
-    def encontrar_caminos(self, inicio):
-        if inicio not in self.lista_nodos:
-            return "Error: Nodo de inicio no existe."
-            
-        distancias = {nodo: math.inf for nodo in self.lista_nodos}
-        distancias[inicio] = 0
-        
-        pq = [(0, inicio)] 
-        
-        while pq:
-            distancia_actual, nodo_actual = heapq.heappop(pq)
-            
-            if distancia_actual > distancias[nodo_actual]:
-                continue
-            
-            for vecino, peso in self.grafo.get(nodo_actual, []):
-                distancia_nueva = distancia_actual + peso
-                
-                if distancia_nueva < distancias[vecino]:
-                    distancias[vecino] = distancia_nueva
-                    heapq.heappush(pq, (distancia_nueva, vecino))
-                    
-        return distancias
+def dijkstra(g, inicio=0):
+    """
+    Implementación universal de Dijkstra usando solo:
+      - g.n
+      - g.vecinos(u)
+      - g.es_ponderado
+    """
 
-def dijkstra(grafo, lista_nodos, inicio='A'):
-    solver = Dijkstra(grafo, lista_nodos)
-    return solver.encontrar_caminos(inicio)
+    n = g.n
+    dist = [math.inf] * n
+    dist[inicio] = 0
+
+    pq = [(0, inicio)]  # (distancia, nodo)
+
+    while pq:
+        d, u = heapq.heappop(pq)
+
+        if d > dist[u]:
+            continue
+
+        for item in g.vecinos(u):
+            if g.es_ponderado:
+                v, peso = item
+            else:
+                v = item
+                peso = 1
+
+            nueva = d + peso
+
+            if nueva < dist[v]:
+                dist[v] = nueva
+                heapq.heappush(pq, (nueva, v))
+
+    # devolver dict SOLO para que la interfaz muestre algo bonito
+    return {i: dist[i] for i in range(n)}

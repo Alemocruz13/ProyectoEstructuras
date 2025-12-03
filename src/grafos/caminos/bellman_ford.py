@@ -1,35 +1,49 @@
+# caminos/bellman_ford.py
+
 import math
 
-class BellmanFord:
-    def __init__(self, grafo, lista_nodos):
-        self.grafo = grafo
-        self.lista_nodos = lista_nodos
-        self.num_nodos = len(lista_nodos)
-        
-    def encontrar_caminos(self, inicio):
-        if inicio not in self.lista_nodos:
-            return {"error": "Nodo de inicio no existe."}
-            
-        distancias = {nodo: math.inf for nodo in self.lista_nodos}
-        distancias[inicio] = 0
-        
-        for _ in range(self.num_nodos - 1):
-            cambio = False
-            for u in self.lista_nodos:
-                for v, peso in self.grafo.get(u, []):
-                    if distancias[u] != math.inf and distancias[u] + peso < distancias[v]:
-                        distancias[v] = distancias[u] + peso
-                        cambio = True
-            if not cambio:
-                break
+def bellman_ford(g, inicio=0):
+    """
+    Bellman-Ford universal basado solo en:
+      - g.n
+      - g.vecinos(u)
+      - g.es_ponderado
+    """
 
-        for u in self.lista_nodos:
-            for v, peso in self.grafo.get(u, []):
-                if distancias[u] != math.inf and distancias[u] + peso < distancias[v]:
-                    return {"error": "Ciclo Negativo detectado. No existe camino más corto."}
+    n = g.n
+    dist = [math.inf] * n
+    dist[inicio] = 0
 
-        return distancias
+    # Relajar n-1 veces
+    for _ in range(n - 1):
+        cambio = False
+        for u in range(n):
+            for item in g.vecinos(u):
 
-def bellman_ford(grafo, lista_nodos, inicio='A'):
-    solver = BellmanFord(grafo, lista_nodos)
-    return solver.encontrar_caminos(inicio)
+                if g.es_ponderado:
+                    v, peso = item
+                else:
+                    v = item
+                    peso = 1
+
+                if dist[u] != math.inf and dist[u] + peso < dist[v]:
+                    dist[v] = dist[u] + peso
+                    cambio = True
+
+        if not cambio:
+            break
+
+    # Detectar ciclo negativo
+    for u in range(n):
+        for item in g.vecinos(u):
+
+            if g.es_ponderado:
+                v, peso = item
+            else:
+                v = item
+                peso = 1
+
+            if dist[u] != math.inf and dist[u] + peso < dist[v]:
+                return {"error": "Ciclo negativo detectado."}
+
+    return {i: dist[i] for i in range(n)}

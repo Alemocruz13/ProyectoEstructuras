@@ -1,66 +1,42 @@
 import heapq
 
-def prim(num_vertices, edges, dirigidos=False, ponderado=True):
+def prim(g):
     """
-    Algoritmo de Prim generalizado.
-    Acepta grafos dirigidos/no dirigidos, ponderados/no ponderados.
-    Siempre construye un grafo NO dirigido para que Prim funcione.
+    Prim compatible con el objeto Grafo.
+    Requiere grafo no dirigido y ponderado.
     """
 
-    # Construcción del grafo
-    graph = [[] for _ in range(num_vertices)]
+    if not g.es_ponderado:
+        return {"error": "Prim requiere grafo ponderado"}
 
-    for edge in edges:
-        if ponderado:
-            u, v, w = edge
-        else:
-            u, v = edge
-            w = 1  # Peso por defecto
+    n = g.n
+    visitado = [False] * n
 
-        # Siempre agregamos ambas direcciones (Prim requiere grafo no dirigido)
-        graph[u].append((v, w))
-        graph[v].append((u, w))
+    # Iniciar desde el primer nodo
+    start = g.nodos[0]
+    start_i = g.indice[start]
+    visitado[start_i] = True
 
-    # Estructuras necesarias
-    visitado = [False] * num_vertices
     heap = []
-
-    # Iniciar desde el vértice 0
-    visitado[0] = True
-    for v, w in graph[0]:
-        heapq.heappush(heap, (w, 0, v))
-
     mst = []
 
-    # Algoritmo de Prim
-    while heap and len(mst) < num_vertices - 1:
-        w, u, v = heapq.heappop(heap)
+    # Insertar aristas iniciales
+    for v, w in g.vecinos(start):
+        heapq.heappush(heap, (w, start_i, g.indice[v]))
 
-        if visitado[v]:
+    # Procesar
+    while heap and len(mst) < n - 1:
+        w, u_i, v_i = heapq.heappop(heap)
+
+        if visitado[v_i]:
             continue
 
-        visitado[v] = True
-        mst.append((u, v, w))
+        visitado[v_i] = True
+        mst.append((g.reverso[u_i], g.reverso[v_i], w))
 
-        for nxt, peso in graph[v]:
-            if not visitado[nxt]:
-                heapq.heappush(heap, (peso, v, nxt))
+        for nxt, peso in g.vecinos(g.reverso[v_i]):
+            nxt_i = g.indice[nxt]
+            if not visitado[nxt_i]:
+                heapq.heappush(heap, (peso, v_i, nxt_i))
 
     return mst
-
-
-# Ejemplo de uso
-if __name__ == "__main__":
-    num_vertices = 5
-    edges = [
-        (0, 1, 2),
-        (0, 3, 6),
-        (1, 3, 8),
-        (1, 2, 3),
-        (1, 4, 5),
-        (2, 4, 7)
-    ]
-    
-    resultado = prim(num_vertices, edges, dirigidos=False, ponderado=True)
-    print("MST:", resultado)
-    
