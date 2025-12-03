@@ -1,11 +1,10 @@
-# core/ejecutar.py
 from core.config import grafo_config
 from core.crear_grafo import crear_grafo_desde_config
 from core.utils import vecinos_nodos, grafo_a_dict, detectar_biparticion
 
 
 # ============================================================
-#  IMPORTACIONES DE ALGORITMOS
+#  IMPORTACIONES DE ALGORITMOS
 # ============================================================
 
 # Recorridos
@@ -30,6 +29,13 @@ try:
     from arboles.kruskal import kruskal as kruskal_old
 except Exception:
     kruskal_old = None
+
+# >>> INTEGRACIÓN PRIM
+try:
+    from arboles.prim import prim as prim_fn
+except Exception:
+    prim_fn = None
+# <<< FIN INTEGRACIÓN PRIM
 
 
 # SCC
@@ -62,15 +68,29 @@ try:
 except Exception:
     hopcroft_karp_ext = None
 
+# Matching bipartito (Hopcroft–Karp)
 try:
-    from pareos.no_bipartito import matching_general as matching_general_ext
+    from pareos.bipartito import hopcroft_karp as hopcroft_karp_ext
 except Exception:
-    matching_general_ext = None
+    hopcroft_karp_ext = None
+
+# Matching máximo general (Blossom)
+try:
+    from pareos.blossom import matching_maximo_general as blossom_ext
+except Exception:
+    blossom_ext = None
+
+# Matching maximal (greedy)
+try:
+    from pareos.matching_maximal import matching_maximal_general as maximal_ext
+except Exception:
+    maximal_ext = None
+
 
 
 
 # ============================================================
-#   EJECUTAR ALGORITMO SELECCIONADO
+#   EJECUTAR ALGORITMO SELECCIONADO
 # ============================================================
 def ejecutar_algoritmo_seleccionado(nombre_alg, extra=None):
 
@@ -85,7 +105,7 @@ def ejecutar_algoritmo_seleccionado(nombre_alg, extra=None):
     # ----------------------------------------------------
     # DFS
     # ----------------------------------------------------
-    if nombre_alg == "DFS":
+    if nombre_alg == "DFS (Depth-First Search)":
         if dfs is None:
             return False, "DFS no implementado."
 
@@ -102,7 +122,7 @@ def ejecutar_algoritmo_seleccionado(nombre_alg, extra=None):
     # ----------------------------------------------------
     # BFS
     # ----------------------------------------------------
-    if nombre_alg == "BFS":
+    if nombre_alg == "BFS (Breadth-First Search)":
         if bfs is None:
             return False, "BFS no implementado."
 
@@ -119,7 +139,7 @@ def ejecutar_algoritmo_seleccionado(nombre_alg, extra=None):
     # ----------------------------------------------------
     # Es Árbol
     # ----------------------------------------------------
-    if nombre_alg == "Es Árbol":
+    if nombre_alg == "Es Árbol (Conected + Ciclos + |E|=n-1)":
         if is_tree_diagnosis is None:
             return False, "Diagnóstico de árbol no implementado."
 
@@ -137,7 +157,7 @@ def ejecutar_algoritmo_seleccionado(nombre_alg, extra=None):
         return True, texto
 
     # ----------------------------------------------------
-    # SCC - Kosaraju / Tarjan
+    # SCC - Kosaraju / Tarjan (CORRECCIÓN: Se pasa solo 'g')
     # ----------------------------------------------------
     if nombre_alg.startswith("SCC"):
 
@@ -145,11 +165,9 @@ def ejecutar_algoritmo_seleccionado(nombre_alg, extra=None):
             if kosaraju_fn is None:
                 return False, "Kosaraju no disponible."
 
-            # Kosaraju requiere grafo dict y lista de nodos
             try:
-                gd = grafo_a_dict(g)
-                lista = list(gd.keys())
-                res = kosaraju_fn(gd, lista)
+                # CORREGIDO: Se pasa solo el objeto Grafo 'g'
+                res = kosaraju_fn(g)
             except Exception as e:
                 return False, f"Kosaraju falló: {e}"
 
@@ -160,9 +178,8 @@ def ejecutar_algoritmo_seleccionado(nombre_alg, extra=None):
                 return False, "Tarjan no disponible."
 
             try:
-                gd = grafo_a_dict(g)
-                lista = list(gd.keys())
-                res = tarjan_fn(gd, lista)
+                # CORREGIDO: Se pasa solo el objeto Grafo 'g'
+                res = tarjan_fn(g)
             except Exception as e:
                 return False, f"Tarjan falló: {e}"
 
@@ -199,7 +216,7 @@ def ejecutar_algoritmo_seleccionado(nombre_alg, extra=None):
     # ----------------------------------------------------
     # MATCHING BIPARTITO
     # ----------------------------------------------------
-    if nombre_alg == "Matching Bipartito":
+    if nombre_alg == "Matching Bipartito (Hopcroft–Karp)":
         U, V, ok = detectar_biparticion(g)
         if not ok:
             return False, "El grafo NO es bipartito."
@@ -219,27 +236,50 @@ def ejecutar_algoritmo_seleccionado(nombre_alg, extra=None):
         return True, f"Matching bipartito máximo = {m}\nPareos U→V:\n{pairU}"
 
     # ----------------------------------------------------
-    # MATCHING GENERAL
+    # MATCHING GENERAL (CORRECCIÓN: INDENTACIÓN)
     # ----------------------------------------------------
-    if nombre_alg == "Matching General":
-        if matching_general_ext:
-            try:
-                mat = matching_general_ext(g)
-            except Exception as e:
-                return False, f"Matching General falló: {e}"
-        else:
-            try:
-                from pareos.no_bipartito import matching_general
-                mat = matching_general(g)
-            except Exception:
-                mat = set()
+    if nombre_alg == "Matching General (Blossom - Edmonds)":
+        if blossom_ext is None:
+            return False, "Matching general (Blossom) no disponible."
 
-        return True, f"Matching general máximo:\n{mat}"
+        try:
+            # Convertir g a lista de aristas estándar
+            edges = []
+            for u in range(g.n):
+                for v in vecinos_nodos(g, u):
+                    v_idx = v[0] if g.es_ponderado else v
+                    if u < v_idx:
+                        edges.append((u, v_idx))
+            mat = blossom_ext(edges)
+        except Exception as e:
+            return False, f"Blossom falló: {e}"
+
+        return True, f"Matching general máximo (Blossom):\n{mat}"
+
+    # ----------------------------------------------------
+    # MATCHING MAXIMAL (CORRECCIÓN: INDENTACIÓN)
+    # ----------------------------------------------------
+    if nombre_alg == "Matching Maximal (Greedy)":
+        if maximal_ext is None:
+            return False, "Matching maximal no disponible."
+        try:
+            edges = []
+            for u in range(g.n):
+                for v in vecinos_nodos(g, u):
+                    v_idx = v[0] if g.es_ponderado else v
+                    if u < v_idx:
+                        edges.append((u, v_idx))
+            mat = maximal_ext(edges)
+        except Exception as e:
+            return False, f"Matching Maximal falló: {e}"
+
+        return True, f"Matching maximal:\n{mat}"
+
 
     # ----------------------------------------------------
     # KRUSKAL
     # ----------------------------------------------------
-    if nombre_alg == "Kruskal (MST)":
+    if nombre_alg == "Kruskal (MST - Kruskal)":
         if kruskal_old is None:
             return False, "Kruskal no disponible."
 
@@ -271,6 +311,31 @@ def ejecutar_algoritmo_seleccionado(nombre_alg, extra=None):
             return True, f"MST (Kruskal):\n{res}"
         except Exception as e:
             return False, f"Kruskal falló: {e}"
+            
+    # ----------------------------------------------------
+    # PRIM (MST) (NUEVO BLOQUE)
+    # ----------------------------------------------------
+    if nombre_alg == "Prim (MST - Prim)":
+        if prim_fn is None:
+            return False, "Prim no disponible."
+        
+        # Validación: Prim requiere grafo no dirigido y ponderado
+        if g.es_dirigido:
+            return False, "Prim requiere un grafo NO dirigido."
+        if not g.es_ponderado:
+            return False, "Prim requiere un grafo PONDERADO."
+
+        try:
+            mst = prim_fn(g)
+            
+            # Formatear la salida
+            total_costo = sum(w for u, v, w in mst)
+            res_str = "\n".join([f"({u}, {v}) Peso: {w}" for u, v, w in mst])
+
+            return True, f"MST (Prim) - Costo Total: {total_costo}\nAristas:\n{res_str}"
+        except Exception as e:
+            return False, f"Prim falló: {e}"
+
 
     # ----------------------------------------------------
     return False, "Algoritmo no reconocido."
