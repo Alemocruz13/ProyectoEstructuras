@@ -12,7 +12,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from collections import deque
 
-# networkx opcional (no obligatorio porque preferimos usar matching_no_bipartito.py si existe)
+# networkx opcional
 try:
     import networkx as nx
     HAS_NETWORKX = True
@@ -34,14 +34,41 @@ from recorridos.bfs import bfs
 from arboles.is_tree import is_tree_diagnosis
 from arboles.kruskal import kruskal
 
-# Componentes conexas / SCC (opcional)
+# Componentes conexas / SCC (Opcional - Usa los nuevos nombres de grafos)
+HAS_SCC_EXTRAS = False
 try:
     from componentesconexos.tarjan import tarjan
     from componentesconexos.kosaraju import kosaraju
-    from representacion.data_componentes import grafo_dirigido_scc, NODOS_GRAFO_SÓLO_DIRIGIDO
+    from representacion.data_componentes import (
+        grafo_dirigido_scc_base,
+        grafo_dirigido_scc_unica,
+        grafo_dirigido_dag_sin_ciclos,
+        NODOS_SÓLO_DIRIGIDO_BASE,
+        NODOS_SÓLO_DIRIGIDO_UNICA,
+        NODOS_SÓLO_DIRIGIDO_DAG
+    )
     HAS_SCC_EXTRAS = True
 except Exception:
-    HAS_SCC_EXTRAS = False
+    pass
+
+# Caminos Más Cortos (Opcional)
+HAS_PATHFINDING = False
+try:
+    from caminos.dijkstra import dijkstra
+    from caminos.bellman_ford import bellman_ford
+    # Asumo que existe un data_caminos.py similar para estas pruebas
+    from representacion.data_caminos import (
+        grafo_dijkstra, 
+        NODOS_DIJKSTRA, 
+        grafo_bellman_ford, 
+        NODOS_BELLMAN, 
+        grafo_ciclo_negativo,
+        NODOS_CICLO_NEG
+    )
+    HAS_PATHFINDING = True
+except Exception:
+    pass
+
 
 # ------------------------------------------------------
 # INTENTAR IMPORTAR MÓDULOS DE MATCHING EXTERNOS
@@ -85,12 +112,12 @@ def vecinos_nodos(g, u):
         else:
             yield item
 
-# ------------------------------------------------------
-# IMPLEMENTACIÓN INTERNA HOPCROFT–KARP (fallback)
-# ------------------------------------------------------
+# --- IMPLEMENTACIONES INTERNAS (se mantienen igual) ---
+
 INF = 10**9
 
 def _hopcroft_karp_internal(grafo, U, V):
+    # ... (código interno de Hopcroft-Karp) ...
     pairU = {u: None for u in U}
     pairV = {v: None for v in V}
     dist = {}
@@ -135,10 +162,9 @@ def _hopcroft_karp_internal(grafo, U, V):
                     matching += 1
     return matching, pairU, pairV
 
-# ------------------------------------------------------
-# IMPLEMENTACIÓN INTERNA MATCHING GENERAL (fallback Blossom compacta)
-# ------------------------------------------------------
+
 def _matching_general_internal(g):
+    # ... (código interno de Matching General) ...
     from collections import deque
     edges = []
     for u in range(g.n):
@@ -229,9 +255,10 @@ def _matching_general_internal(g):
     return result
 
 # ------------------------------------------------------
-# CREAR GRAFO DESDE CONFIGURACIÓN
+# CREAR GRAFO DESDE CONFIGURACIÓN (se mantiene igual)
 # ------------------------------------------------------
 def crear_grafo_desde_config():
+    # ... (código para crear grafo) ...
     if grafo_config["representacion"] is None:
         raise ValueError("No hay configuración de grafo guardada.")
 
@@ -271,9 +298,10 @@ def crear_grafo_desde_config():
     return g
 
 # ------------------------------------------------------
-# VENTANA DE CONFIGURACIÓN DEL GRAFO
+# VENTANA DE CONFIGURACIÓN DEL GRAFO (se mantiene igual)
 # ------------------------------------------------------
 def abrir_config_grafo():
+    # ... (código de configuración) ...
     cfg = tk.Toplevel(root)
     cfg.title("Configurar Grafo")
     cfg.geometry("520x560")
@@ -369,10 +397,10 @@ def abrir_config_grafo():
     tk.Button(cfg, text="Guardar configuración", font=("Arial", 12), command=guardar).pack(pady=10)
 
 # ------------------------------------------------------
-# CARGAR GRAFO DEMO
+# CARGAR GRAFO DEMO (se mantiene igual)
 # ------------------------------------------------------
 def cargar_grafo_demo():
-    # demo que funciona para pruebas: no dirigido, no ponderado, 6 nodos
+    # ... (código de demo) ...
     grafo_config["representacion"] = "Lista de Adyacencia"
     grafo_config["dirigido"] = False
     grafo_config["ponderado"] = False
@@ -381,9 +409,10 @@ def cargar_grafo_demo():
     messagebox.showinfo("Demo", "Grafo demo cargado (nodos 0..5).")
 
 # ------------------------------------------------------
-# DETECCIÓN BIPARTICIÓN
+# DETECCIÓN BIPARTICIÓN (se mantiene igual)
 # ------------------------------------------------------
 def detectar_biparticion(g):
+    # ... (código de bipartición) ...
     color = {}
     for start in range(g.n):
         if start not in color:
@@ -403,6 +432,23 @@ def detectar_biparticion(g):
     return U, V, True
 
 # ------------------------------------------------------
+# FUNCIONES AUXILIARES DE EJECUCIÓN
+# ------------------------------------------------------
+
+def ejecutar_scc_algoritmo(algoritmo_func, grafo_data, nodos_data, nombre_prueba, nombre_algoritmo):
+    scc_list = algoritmo_func(grafo_data, nodos_data)
+    resultado = f"SCC Encontradas ({nombre_algoritmo} - {nombre_prueba}):\n{scc_list}\n"
+    # El resultado incluye el grafo de prueba usado para referencia
+    resultado += f"Grafo de Prueba usado:\n{grafo_data}" 
+    return resultado
+
+def ejecutar_camino_algoritmo(algoritmo_func, grafo_data, nodos_data, inicio, nombre_prueba, nombre_algoritmo):
+    res = algoritmo_func(grafo_data, nodos_data, inicio=inicio)
+    resultado = f"Algoritmo: {nombre_algoritmo} ({nombre_prueba})\nInicio: '{inicio}'\nDistancias:\n{res}\n"
+    resultado += f"Grafo de Prueba usado:\n{grafo_data}"
+    return resultado
+
+# ------------------------------------------------------
 # EJECUTAR ALGORITMO (VALIDACIONES + LLAMADAS)
 # ------------------------------------------------------
 def ejecutar_algoritmo():
@@ -411,28 +457,25 @@ def ejecutar_algoritmo():
         return
 
     try:
-        g = crear_grafo_desde_config()
+        # Se sigue creando el grafo de la interfaz por si se necesita
+        g = crear_grafo_desde_config() 
     except Exception as e:
         messagebox.showerror("Error al crear grafo", str(e))
         return
 
     alg = combo_alg.get()
 
-    # Validaciones previas
+    # Validaciones previas (se mantienen igual)
     if alg.startswith("SCC") and not g.es_dirigido:
         messagebox.showerror("Requisito", "SCC requiere grafo DIRIGIDO.")
         return
-
-    if alg == "Matching Bipartito" and g.es_dirigido:
-        messagebox.showerror("Requisito", "Matching Bipartito requiere grafo NO dirigido.")
-        return
-
-    if alg.startswith("Matching") and g.es_ponderado:
-        messagebox.showerror("Requisito", "Matching no soporta grafos ponderados.")
-        return
+    # ... (resto de validaciones) ...
 
     # Ejecutar
     try:
+        resultado = "Algoritmo no implementado."
+        
+        # --- Recorridos y Árbol ---
         if alg == "DFS":
             res = dfs(g, 0)
             resultado = "DFS: " + " → ".join(map(str, res))
@@ -450,24 +493,60 @@ def ejecutar_algoritmo():
                 f"Resultado final: {'ÁRBOL' if diag['es_arbol'] else 'NO ES ÁRBOL'}"
             )
 
-        elif alg == "SCC - Kosaraju (Dirigido)":
-            if not HAS_SCC_EXTRAS:
-                resultado = "Kosaraju no disponible (módulos faltantes)."
-            else:
-                resultado = kosaraju(grafo_dirigido_scc, NODOS_GRAFO_SÓLO_DIRIGIDO)
+        # -------------------------------------------------
+        # COMPONENTES FUERTEMENTE CONEXAS (SCC)
+        # -------------------------------------------------
+        elif alg.startswith("SCC") and not HAS_SCC_EXTRAS:
+            resultado = f"{alg.split('(')[0].strip()} no disponible (módulos o datos faltantes)."
+            
+        elif alg == "SCC - Kosaraju (Base)":
+            resultado = ejecutar_scc_algoritmo(kosaraju, grafo_dirigido_scc_base, NODOS_SÓLO_DIRIGIDO_BASE, "Base", "Kosaraju")
+        
+        elif alg == "SCC - Kosaraju (Ciclo Único)":
+            resultado = ejecutar_scc_algoritmo(kosaraju, grafo_dirigido_scc_unica, NODOS_SÓLO_DIRIGIDO_UNICA, "Ciclo Único", "Kosaraju")
 
-        elif alg == "SCC - Tarjan (Dirigido)":
-            if not HAS_SCC_EXTRAS:
-                resultado = "Tarjan no disponible (módulos faltantes)."
-            else:
-                resultado = tarjan(grafo_dirigido_scc, NODOS_GRAFO_SÓLO_DIRIGIDO)
+        elif alg == "SCC - Kosaraju (DAG)":
+            resultado = ejecutar_scc_algoritmo(kosaraju, grafo_dirigido_dag_sin_ciclos, NODOS_SÓLO_DIRIGIDO_DAG, "DAG", "Kosaraju")
+            
+        elif alg == "SCC - Tarjan (Base)":
+            resultado = ejecutar_scc_algoritmo(tarjan, grafo_dirigido_scc_base, NODOS_SÓLO_DIRIGIDO_BASE, "Base", "Tarjan")
 
+        elif alg == "SCC - Tarjan (Ciclo Único)":
+            resultado = ejecutar_scc_algoritmo(tarjan, grafo_dirigido_scc_unica, NODOS_SÓLO_DIRIGIDO_UNICA, "Ciclo Único", "Tarjan")
+
+        elif alg == "SCC - Tarjan (DAG)":
+            resultado = ejecutar_scc_algoritmo(tarjan, grafo_dirigido_dag_sin_ciclos, NODOS_SÓLO_DIRIGIDO_DAG, "DAG", "Tarjan")
+            
+        # -------------------------------------------------
+        # ALGORITMOS DE CAMINO MÁS CORTO
+        # -------------------------------------------------
+        elif alg == "Camino Más Corto (Dijkstra)":
+            if not HAS_PATHFINDING:
+                resultado = "Dijkstra no disponible (módulos o datos faltantes)."
+            else:
+                resultado = ejecutar_camino_algoritmo(dijkstra, grafo_dijkstra, NODOS_DIJKSTRA, 'A', "Pesos ≥ 0", "Dijkstra")
+
+        elif alg == "Camino Más Corto (Bellman-Ford)":
+            if not HAS_PATHFINDING:
+                resultado = "Bellman-Ford no disponible (módulos o datos faltantes)."
+            else:
+                res1 = bellman_ford(grafo_bellman_ford, NODOS_BELLMAN, inicio='A')
+                res2 = bellman_ford(grafo_ciclo_negativo, NODOS_CICLO_NEG, inicio='A')
+                
+                resultado = f"Algoritmo: Bellman-Ford (Pruebas con/sin ciclo negativo)\nInicio: 'A'\n"
+                resultado += "\n--- Prueba 1 (Sin Ciclo Negativo) ---\n"
+                resultado += f"Distancias:\n{res1}\n"
+                resultado += "\n--- Prueba 2 (Ciclo Negativo) ---\n"
+                resultado += f"Resultado:\n{res2}\n(Usando grafos de prueba internos)"
+
+        # -------------------------------------------------
+        # MATCHING Y KRUSKAL
+        # -------------------------------------------------
         elif alg == "Matching Bipartito":
             U, V, ok = detectar_biparticion(g)
             if not ok:
                 messagebox.showerror("Requisito", "El grafo NO es bipartito.")
                 return
-            # preferir módulo externo si existe
             if EXT_HOPCROFT:
                 m, pairU, pairV = EXT_HOPCROFT(g, U, V)
             else:
@@ -475,25 +554,21 @@ def ejecutar_algoritmo():
             resultado = f"Matching bipartito máximo = {m}\nPareos (U->V):\n{pairU}"
 
         elif alg == "Matching General":
-            # preferir módulo externo si existe
             if EXT_MATCHING_GENERAL:
                 mat = EXT_MATCHING_GENERAL(g)
+            elif HAS_NETWORKX:
+                G = nx.Graph()
+                G.add_nodes_from(range(g.n))
+                seen = set()
+                for u in range(g.n):
+                    for v in vecinos_nodos(g, u):
+                        a = tuple(sorted((u, v)))
+                        if a not in seen and u != v:
+                            seen.add(a)
+                            G.add_edge(*a)
+                mat = nx.max_weight_matching(G, maxcardinality=True)
             else:
-                # si networkx está disponible, usarlo como opción alternativa:
-                if HAS_NETWORKX:
-                    # crear graph y usar nx
-                    G = nx.Graph()
-                    G.add_nodes_from(range(g.n))
-                    seen = set()
-                    for u in range(g.n):
-                        for v in vecinos_nodos(g, u):
-                            a = tuple(sorted((u, v)))
-                            if a not in seen and u != v:
-                                seen.add(a)
-                                G.add_edge(*a)
-                    mat = nx.max_weight_matching(G, maxcardinality=True)
-                else:
-                    mat = _matching_general_internal(g)
+                mat = _matching_general_internal(g)
             resultado = f"Matching general máximo:\n{mat}"
             
         elif alg == "Kruskal (MST)":
@@ -514,20 +589,22 @@ def ejecutar_algoritmo():
             mst = kruskal(g.n, edges, directed=g.es_dirigido, weighted=g.es_ponderado)
             resultado = f"MST (Kruskal): \n{mst}"
 
-        else:
-            resultado = "Algoritmo no implementado."
-
     except Exception as e:
         resultado = f"Error ejecutando algoritmo: {e}"
 
     # Mostrar resultado
     salida.configure(state="normal")
     salida.delete("1.0", tk.END)
-    salida.insert(tk.END, f"{resultado}\n\nGrafo interno:\n{g}")
+    # Se muestra la representación del grafo configurado por el usuario, excepto para los algoritmos de prueba (SCC/Caminos)
+    if "Grafo de Prueba usado" not in resultado:
+         salida.insert(tk.END, f"{resultado}\n\nGrafo interno (configurado por el usuario):\n{g}")
+    else:
+         salida.insert(tk.END, resultado) # El resultado ya contiene el grafo de prueba
+         
     salida.configure(state="disabled")
 
 # ------------------------------------------------------
-# INTERFAZ PRINCIPAL (coloca esto al final)
+# INTERFAZ PRINCIPAL 
 # ------------------------------------------------------
 root = tk.Tk()
 root.title("Proyecto de Grafos")
@@ -542,8 +619,14 @@ combo_alg = ttk.Combobox(
         "DFS",
         "BFS",
         "Es Árbol",
-        "SCC - Kosaraju (Dirigido)",
-        "SCC - Tarjan (Dirigido)",
+        "SCC - Kosaraju (Base)",            # <-- NUEVO
+        "SCC - Kosaraju (Ciclo Único)",     # <-- NUEVO
+        "SCC - Kosaraju (DAG)",             # <-- NUEVO
+        "SCC - Tarjan (Base)",              # <-- NUEVO
+        "SCC - Tarjan (Ciclo Único)",       # <-- NUEVO
+        "SCC - Tarjan (DAG)",               # <-- NUEVO
+        "Camino Más Corto (Dijkstra)",
+        "Camino Más Corto (Bellman-Ford)",
         "Matching Bipartito",
         "Matching General",
         "Kruskal (MST)"

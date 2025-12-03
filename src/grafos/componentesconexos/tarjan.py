@@ -1,5 +1,7 @@
-# Importación corregida
-from representacion.data_componentes import grafo_dirigido_scc, NODOS_GRAFO_SÓLO_DIRIGIDO
+# Archivo: src/componentesconexos/tarjan.py
+
+# Importación corregida a las nuevas variables de prueba base
+from representacion.data_componentes import grafo_dirigido_scc_base, NODOS_SÓLO_DIRIGIDO_BASE
 
 class TarjanSCC:
     def __init__(self, grafo, lista_nodos):
@@ -9,9 +11,9 @@ class TarjanSCC:
         self.tiempo = 0
         
         # Inicialización de Diccionarios clave
-        self.disc_time = {nodo: -1 for nodo in lista_nodos}      # Tiempo de Descubrimiento (descubrimiento)
-        self.low_link_time = {nodo: -1 for nodo in lista_nodos}  # El tiempo más bajo alcanzable
-        self.en_pila = {nodo: False for nodo in lista_nodos}      # ¿El nodo está en la pila actual?
+        self.ids = {nodo: -1 for nodo in lista_nodos}       # Tiempo de Descubrimiento (Discovery ID)
+        self.low = {nodo: -1 for nodo in lista_nodos}       # El tiempo más bajo alcanzable (Low-link)
+        self.en_pila = {nodo: False for nodo in lista_nodos} # ¿El nodo está en la pila actual?
         
         self.pila = []
         self.scc_encontradas = []
@@ -20,23 +22,23 @@ class TarjanSCC:
         """ La función central de DFS que encuentra las SCC. """
         
         # 1. Inicializar tiempos y agregar a la pila
-        self.disc_time[u] = self.low_link_time[u] = self.tiempo
+        self.ids[u] = self.low[u] = self.tiempo
         self.tiempo += 1
         self.pila.append(u)
         self.en_pila[u] = True
 
         for v in self.grafo.get(u, []):
-            if self.disc_time[v] == -1: # Caso 1: Vecino no visitado (Arista de árbol)
+            if self.ids[v] == -1: # Caso 1: Vecino no visitado (Arista de árbol)
                 self.scc_dfs(v)
-                # Propagar el low_link_time del hijo
-                self.low_link_time[u] = min(self.low_link_time[u], self.low_link_time[v])
+                # Propagar el low_link del hijo
+                self.low[u] = min(self.low[u], self.low[v])
             
             elif self.en_pila[v]: # Caso 2: Vecino visitado que está en la pila (Arista de retroceso)
-                # Usar el tiempo de descubrimiento del vecino, no su low_link
-                self.low_link_time[u] = min(self.low_link_time[u], self.disc_time[v])
+                # Usar el ID de descubrimiento del vecino, no su low_link
+                self.low[u] = min(self.low[u], self.ids[v])
 
         # 2. Si u es la raíz de una SCC
-        if self.low_link_time[u] == self.disc_time[u]:
+        if self.low[u] == self.ids[u]:
             scc_actual = []
             while True:
                 v = self.pila.pop()
@@ -51,7 +53,7 @@ class TarjanSCC:
         
         # Recorrer todos los nodos para manejar grafos no conexos
         for nodo in self.lista_nodos:
-            if self.disc_time[nodo] == -1: # Si no ha sido descubierto
+            if self.ids[nodo] == -1: # Si no ha sido descubierto
                 self.scc_dfs(nodo)
                 
         return self.scc_encontradas
@@ -63,5 +65,6 @@ def tarjan(grafo, lista_nodos):
 
 
 if __name__ == "__main__":
-    scc = tarjan(grafo_dirigido_scc, NODOS_GRAFO_SÓLO_DIRIGIDO)
+    # Usando las nuevas variables de prueba BASE
+    scc = tarjan(grafo_dirigido_scc_base, NODOS_SÓLO_DIRIGIDO_BASE)
     print("SCC Tarjan:", scc)
