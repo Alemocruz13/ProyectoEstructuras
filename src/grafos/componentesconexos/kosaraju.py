@@ -1,5 +1,7 @@
-# Importación corregida
-from representacion.data_componentes import grafo_dirigido_scc, NODOS_GRAFO_SÓLO_DIRIGIDO
+# Archivo: src/componentesconexos/kosaraju.py
+
+# Importación corregida a las nuevas variables de prueba base
+from representacion.data_componentes import grafo_dirigido_scc_base, NODOS_SÓLO_DIRIGIDO_BASE
 
 class KosarajuSCC:
     def __init__(self, grafo, lista_nodos):
@@ -74,5 +76,6 @@ def kosaraju(grafo, lista_nodos):
     return solver.encontrar_scc()
 
 if __name__ == "__main__":
-    scc = kosaraju(grafo_dirigido_scc, NODOS_GRAFO_SÓLO_DIRIGIDO)
+    # Usando las nuevas variables de prueba BASE
+    scc = kosaraju(grafo_dirigido_scc_base, NODOS_SÓLO_DIRIGIDO_BASE)
     print("SCC Kosaraju:", scc)
