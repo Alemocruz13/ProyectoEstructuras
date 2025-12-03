@@ -18,20 +18,18 @@ def iniciar_interfaz():
     combo_alg = ttk.Combobox(
         root,
         values=[
-            "DFS",
-            "BFS",
-            "Es Árbol",
-            "SCC - Kosaraju (Base)",
-            "SCC - Kosaraju (Ciclo Único)",
-            "SCC - Kosaraju (DAG)",
-            "SCC - Tarjan (Base)",
-            "SCC - Tarjan (Ciclo Único)",
-            "SCC - Tarjan (DAG)",
+            "DFS (Depth-First Search)",
+            "BFS (Breadth-First Search)",
+            "Es Árbol (Conected + Ciclos + |E|=n-1)",
+            "SCC - Kosaraju (Kosaraju)",
+            "SCC - Tarjan (Tarjan)",
             "Camino Más Corto (Dijkstra)",
             "Camino Más Corto (Bellman-Ford)",
-            "Matching Bipartito",
-            "Matching General",
-            "Kruskal (MST)"
+            "Matching Bipartito (Hopcroft–Karp)",
+            "Matching General (Blossom - Edmonds)",
+            "Matching Maximal (Greedy)",
+            "Kruskal (MST - Kruskal)",
+            "Prim (MST - Prim)"
         ],
         state="readonly",
         width=45
