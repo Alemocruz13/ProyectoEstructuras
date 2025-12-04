@@ -100,7 +100,6 @@ La interfaz gráfica se abrirá automáticamente.
 ### 🔹 Bipartición
 
 -   Verificación de grafo bipartito
--   2-coloring
 
 ### 🔹 Matching (pareo)
 
